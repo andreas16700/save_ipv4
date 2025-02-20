@@ -54,10 +54,12 @@ def main(context):
         current_saved = get_ip(doc_id="current")
         if current_saved == current_ip:
             context.log(f"current ip is the one that's saved: {current_ip}")
-
+        context.log(f"saving new ip {current_ip} and old ip {current_saved}")
         save_ip(ip=current_saved, doc_id="old")
 
         save_ip(ip=current_ip, doc_id="current")
+
+        context.log(f"done!")
 
 
         # Log messages and errors to the Appwrite Console
