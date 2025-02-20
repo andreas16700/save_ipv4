@@ -1,48 +1,26 @@
-# ⚡ Python Starter Function
+# ⚡ Save current public IPv4 to Appwrite Cloud
 
-A simple starter function. Edit `src/main.py` to get started and create something awesome! 🚀
+I self-host an appwrite instance on my home network. I don't have a static IP which means it changes sometimes.
 
-## 🧰 Usage
+This function is meant to run on a regular basis on the self hosted instance.
 
-### GET /ping
+This function fetches the current public IPv4 address from https://api.ipify.org and saves it on a database on Appwrite Cloud.
 
-- Returns a "Pong" message.
 
-**Response**
 
-Sample `200` Response:
+## Assumptions
+There is a database (id='constants'), inside it a collection (id=`ip`) with a required IP attribute with two documents:
 
-```text
-Pong
-```
+* `current`: the current public IPv4 address
+* `old`: the previously saved IPv4 address
 
-### GET, POST, PUT, PATCH, DELETE /
+The above documents are updated iff the currently saved address on AW Cloud differs from the currently public IPv4 address.
 
-- Returns a "Learn More" JSON response.
-
-**Response**
-
-Sample `200` Response:
-
-```json
-{
-  "motto": "Build like a team of hundreds_",
-  "learn": "https://appwrite.io/docs",
-  "connect": "https://appwrite.io/discord",
-  "getInspired": "https://builtwith.appwrite.io"
-}
-```
-
-## ⚙️ Configuration
-
-| Setting           | Value                             |
-| ----------------- | --------------------------------- |
-| Runtime           | Python (3.9)                      |
-| Entrypoint        | `src/main.py`                     |
-| Build Commands    | `pip install -r requirements.txt` |
-| Permissions       | `any`                             |
-| Timeout (Seconds) | 15                                |
 
 ## 🔒 Environment Variables
 
-No environment variables required.
+
+
+| Key               | Value                    |
+|-------------------|--------------------------|
+| AW_CLOUD_KEY | `the_api_key_for_aw_cloud` |
