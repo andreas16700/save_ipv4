@@ -2,9 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*/.DS_Store
+**/.DS_Store
 pg.ipynb
 .idea/
+.env
+src/template.html
+output.html
 
 # C extensions
 *.so

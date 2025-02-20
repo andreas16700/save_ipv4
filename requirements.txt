@@ -1,1 +1,5 @@
-appwrite
+appwrite~=7.1.0
+
+requests~=2.32.3
+cloudflare~=4.0.0
+Jinja2~=3.1.5
