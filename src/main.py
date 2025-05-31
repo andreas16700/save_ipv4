@@ -7,6 +7,7 @@ from datetime import datetime
 from cloudflare import Cloudflare
 from cloudflare.types.dns.batch_patch_param import ARecord
 from dotenv import load_dotenv
+import traceback
 
 def custom_serializer(obj):
     if isinstance(obj, datetime):
@@ -72,6 +73,7 @@ def update_dns_records(oldip: str, newip: str):
 
         print(f"done!")
     except Exception as e:
+        traceback.print_exc()
         print(f"error updating dns records: {e}")
 
 
