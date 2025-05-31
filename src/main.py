@@ -65,6 +65,12 @@ def update_dns_records(oldip: str, newip: str):
     try:
         response = client.dns.records.batch(zone_id=CF_ZONE, patches=[ARecord(id=re.id, content=newip) for re in records_of_interest])
         print(json.dumps(response, default=custom_serializer, indent=5))
+        print(f"saving new ip {current_ip} and old ip {current_saved}")
+        save_ip(ip=oldip, doc_id="old")
+
+        save_ip(ip=newip, doc_id="current")
+
+        print(f"done!")
     except Exception as e:
         print(f"error updating dns records: {e}")
 
@@ -103,12 +109,6 @@ if __name__ == '__main__':
             msg = f"current ip is the one that's saved: {current_ip}"
             print(msg)
             exit(0)
-        print(f"saving new ip {current_ip} and old ip {current_saved}")
-        save_ip(ip=current_saved, doc_id="old")
-
-        save_ip(ip=current_ip, doc_id="current")
-
-        print(f"done!")
 
         print(f"updating cloudflare records...")
         update_dns_records(oldip=current_saved, newip=current_ip)
