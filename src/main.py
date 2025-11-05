@@ -1,7 +1,3 @@
-from appwrite.client import Client
-from appwrite.services.users import Users
-from appwrite.services.databases import Databases
-from appwrite.exception import AppwriteException
 import os, requests, json
 from datetime import datetime
 from cloudflare import Cloudflare
@@ -27,24 +23,37 @@ dotenv_path = os.path.join(script_dir, '.env')
 
 load_dotenv(dotenv_path)
 
-client = (
+from appwrite.client import Client
+from appwrite.services.users import Users
+from appwrite.services.databases import Databases
+from appwrite.exception import AppwriteException
+
+aw_client = (
         Client()
         # .set_endpoint(os.environ["APPWRITE_FUNCTION_API_ENDPOINT"])
         .set_project('latsia-support')
         .set_key(os.environ["AW_CLOUD_KEY"])
     )
-databases = Databases(client)
+databases = Databases(aw_client)
+def get_ip(doc_id):
+    return databases.get_document(database_id=DB_ID, collection_id=COLL_ID, document_id=doc_id)[
+        'ipv4']
+def save_ip(ip, doc_id):
+    databases.update_document(database_id=DB_ID, collection_id=COLL_ID, document_id=doc_id, data={
+        "ipv4": ip
+    })
 
 url = "https://api.ipify.org"
 DB_ID = "constants"
 COLL_ID = "ip"
 
 
-AW_CLOUD_KEY=os.environ["AW_CLOUD_KEY"]
+# AW_CLOUD_KEY=os.environ["AW_CLOUD_KEY"]
 CF_TOKEN = os.environ["CF_TOKEN"]
 CF_KEY = os.environ["CF_KEY"]
 CF_EMAIL = os.environ["CF_EMAIL"]
 CF_ZONE = os.environ["CF_ZONE"]
+DOMAINS = os.environ["DOMAINS"].split(',')
 
 client = Cloudflare(
     api_email=CF_EMAIL,
@@ -66,16 +75,47 @@ def update_dns_records(oldip: str, newip: str):
     try:
         response = client.dns.records.batch(zone_id=CF_ZONE, patches=[ARecord(id=re.id, content=newip) for re in records_of_interest])
         print(json.dumps(response, default=custom_serializer, indent=5))
-        print(f"saving new ip {current_ip} and old ip {current_saved}")
-        save_ip(ip=oldip, doc_id="old")
-
-        save_ip(ip=newip, doc_id="current")
+        # print(f"saving new ip {current_ip} and old ip {current_saved}")
+        # save_ip(ip=oldip, doc_id="old")
+        #
+        # save_ip(ip=newip, doc_id="current")
 
         print(f"done!")
     except Exception as e:
         traceback.print_exc()
         print(f"error updating dns records: {e}")
 
+from typing import List
+from cloudflare.types.dns.record_response import ARecord as ResponseARecord
+from cloudflare.types.dns.batch_patch_param import ARecord as ParamARecord
+
+def a_records_not_matching_ip(ip: str)->List[ResponseARecord]:
+    page = client.dns.records.list(zone_id=CF_ZONE)
+    records_of_interest = [r1 for r1 in page.result if r1.name in DOMAINS and r1.type =='A']
+    if len(records_of_interest) <= 0:
+        print(f"No A records on cloudflare for the requested domains! {", ".join(DOMAINS)}!")
+    else:
+        print(f"will update {len(records_of_interest)} A records on cloudflare to point to the new ip {ip}")
+        for r in records_of_interest:
+            print(f"[{r.name}] {r.content}]:")
+    return records_of_interest
+
+def update_records_to_new_ip(records: List[ResponseARecord], ip: str):
+    try:
+        patches = [ParamARecord(id=r.id, content=ip) for r in records]
+        response = client.dns.records.batch(zone_id=CF_ZONE, patches=patches)
+        print(json.dumps(response, default=custom_serializer, indent=5))
+        # print(f"saving new ip {current_ip} and old ip {current_saved}")
+        # save_ip(ip=oldip, doc_id="old")
+        #
+        # save_ip(ip=newip, doc_id="current")
+
+        print(f"done!")
+        return True
+    except Exception as e:
+        traceback.print_exc()
+        print(f"error updating dns records: {e}")
+        return False
 
 def fetch_public_ipv4():
     # Fetch the current public IPv4 address using ipify
@@ -89,13 +129,7 @@ def fetch_public_ipv4():
         # Handle error appropriately (logging, retrying, etc.)
         print(f"Error fetching IP: {e}")
         return None
-def get_ip(doc_id):
-    return databases.get_document(database_id=DB_ID, collection_id=COLL_ID, document_id=doc_id)[
-        'ipv4']
-def save_ip(ip, doc_id):
-    databases.update_document(database_id=DB_ID, collection_id=COLL_ID, document_id=doc_id, data={
-        "ipv4": ip
-    })
+
 
 if __name__ == '__main__':
 
@@ -112,10 +146,16 @@ if __name__ == '__main__':
             print(msg)
             exit(0)
 
+        print("IP is different!")
+        print(f"Fetching cloudflare A records for {", ".join(DOMAINS)}...")
+        records = a_records_not_matching_ip(current_ip)
+        print(f"found {len(records)} records.")
         print(f"updating cloudflare records...")
-        update_dns_records(oldip=current_saved, newip=current_ip)
-
-
+        if update_records_to_new_ip(records, current_ip):
+            print("updating appwrite file..")
+            save_ip(current_ip, "current")
+            save_ip(current_saved, "old")
+        print("All done!")
         # Log messages and errors to the Appwrite Console
         # These logs won't be seen by your end users
         # context.log("Total users: " + str(response["total"]))
