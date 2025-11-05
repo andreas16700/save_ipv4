@@ -147,7 +147,7 @@ def main(context):
         if current_saved == current_ip:
             msg = f"current ip is the one that's saved: {current_ip}"
             print(msg)
-            return
+            return context.res.text(msg, 200)
 
         print("IP is different!")
         print(f"Fetching cloudflare A records for {", ".join(DOMAINS)}...")
@@ -167,4 +167,4 @@ def main(context):
         raise err
 
 
-    return
+    return context.res.text("All done!", 200)
