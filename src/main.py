@@ -131,7 +131,7 @@ def fetch_public_ipv4():
         return None
 
 
-if __name__ == '__main__':
+def main(context):
 
     current_ip = fetch_public_ipv4()
     if current_ip is None:
