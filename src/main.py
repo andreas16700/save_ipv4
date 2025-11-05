@@ -130,12 +130,15 @@ def fetch_public_ipv4():
         print(f"Error fetching IP: {e}")
         return None
 
+class MyException(Exception):
+    def __init__(self,msg):
+        self.msg=msg
 
 def main(context):
 
     current_ip = fetch_public_ipv4()
     if current_ip is None:
-        exit(1)
+        raise MyException("could not fetch current IP!")
 
     try:
         # keep the currently saved ip as a backup, then save the new one.
@@ -144,7 +147,7 @@ def main(context):
         if current_saved == current_ip:
             msg = f"current ip is the one that's saved: {current_ip}"
             print(msg)
-            exit(0)
+            return
 
         print("IP is different!")
         print(f"Fetching cloudflare A records for {", ".join(DOMAINS)}...")
@@ -161,7 +164,7 @@ def main(context):
         # context.log("Total users: " + str(response["total"]))
     except AppwriteException as err:
         print("appwrite error: " + repr(err))
-        exit(1)
+        raise err
 
 
-    exit(0)
+    return
